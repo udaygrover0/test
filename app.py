@@ -40,7 +40,7 @@ def main():
     st.sidebar.header("1️⃣ Upload & Configure")
     uploaded_file = st.sidebar.file_uploader("Upload your dataset (CSV file)", type=["csv"])
     
-    llm_choice = st.sidebar.selectbox("Select AI Model", ["Groq (Llama3-70B)", "OpenAI (GPT-4o)"])
+    llm_choice = st.sidebar.selectbox("Select AI Model", ["Groq (Llama3-70B)", "OpenAI (gpt-4o-mini)"])
     api_key = st.sidebar.text_input("Enter API Key", type="password")
     
     if uploaded_file is not None and api_key:
