@@ -76,7 +76,7 @@ def main():
                 return
 
             # Initialize LLM based on selection
-            llm = Groq(model="llama3-70b-8192", api_key=api_key) if "Groq" in llm_choice else OpenAI(model="gpt-4o", api_key=api_key)
+            llm = Groq(model="llama3-70b-8192", api_key=api_key) if "Groq" in llm_choice else OpenAI(model="gpt-4o-mini", api_key=api_key)
             
             # Append the Base64 encoded image to the AI prompt
             ai_prompt = f"""
