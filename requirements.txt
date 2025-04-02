@@ -9,3 +9,4 @@ regex
 pyperclip
 tabulate
 requests
+kaleido
