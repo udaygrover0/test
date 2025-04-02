@@ -37,7 +37,7 @@ def main():
     st.sidebar.header("1️⃣ Upload & Configure")
     uploaded_file = st.sidebar.file_uploader("Upload your dataset (CSV file)", type=["csv"])
     
-    llm_choice = st.sidebar.selectbox("Select AI Model", ["Groq (Llama3-70B)", "OpenAI (GPT-4o)"])
+    llm_choice = st.sidebar.selectbox("Select AI Model", ["Groq (Llama3-70B)", "OpenAI (GPT-4o-mini)"])
     api_key = st.sidebar.text_input("Enter API Key", type="password")
     
     if uploaded_file is not None and api_key:
@@ -48,16 +48,19 @@ def main():
         x_axis = st.sidebar.selectbox("Select X-axis", df.columns)
         y_axis = st.sidebar.selectbox("Select Y-axis", df.columns)
         chart_type = st.sidebar.selectbox("Select Chart Type", ["bar", "line", "scatter", "histogram", "pie", "box"])
-        user_prompt = st.sidebar.text_area("💬 Custom AI Prompt (Optional)", 
-                                           "Analyze the provided data and chart to generate insights.")
+        user_prompt = st.sidebar.text_area(
+            "💬 Custom AI Prompt (Optional)",
+            "Analyze the provided data and chart to generate insights."
+        )
         generate_button = st.sidebar.button("🚀 Generate Visualization & Insights")
         
         if generate_button:
             st.subheader("📈 Visualization")
             try:
                 # Create the Plotly figure based on the selected chart type
-                fig = px.__getattribute__(chart_type)(df, x=x_axis, y=y_axis, 
-                                                      title=f'{chart_type.capitalize()} Visualization')
+                fig = px.__getattribute__(chart_type)(
+                    df, x=x_axis, y=y_axis, title=f'{chart_type.capitalize()} Visualization'
+                )
                 fig.update_layout(xaxis_title=x_axis, yaxis_title=y_axis)
                 st.plotly_chart(fig)
             except Exception as e:
@@ -72,10 +75,12 @@ def main():
                 return
 
             # Initialize LLM based on selection
-            llm = Groq(model="llama3-70b-8192", api_key=api_key) if "Groq" in llm_choice \
-                  else OpenAI(model="gpt-4o-mini", api_key=api_key)
+            if "Groq" in llm_choice:
+                llm = Groq(model="llama3-70b-8192", api_key=api_key)
+            else:
+                llm = OpenAI(model="gpt-4o-mini", api_key=api_key)
             
-            # Prepare the text prompt (now wrapped in a list to satisfy the expected input type)
+            # Prepare the text prompt
             ai_prompt = f"""
 You are an AI specialized in marketing analytics. Given the dataset and the generated visualization:
 - Identify key trends in '{x_axis}' and '{y_axis}'.
@@ -85,11 +90,11 @@ You are an AI specialized in marketing analytics. Given the dataset and the gene
 {user_prompt}
             """
             
-            # Wrap the prompt in a list
-            messages = [ai_prompt]
+            # Wrap the prompt in a valid ChatMessage dictionary
+            messages = [{"role": "user", "content": ai_prompt}]
             
-            # Call the LLM's chat method with the text messages and image bytes.
             try:
+                # Call the LLM's chat method with the text messages and image bytes.
                 response = llm.chat(messages, images=[img_bytes])
             except Exception as e:
                 st.error(f"Error during AI processing: {e}")
@@ -112,8 +117,8 @@ fig.update_layout(xaxis_title="{x_axis}", yaxis_title="{y_axis}")
 fig.show()
 # Convert the chart to a PNG image (as bytes)
 img_bytes = fig.to_image(format="png")
-# Prepare prompt and call LLM
-messages = ["Your prompt here"]
+# Prepare prompt as a list of chat messages
+messages = [{{"role": "user", "content": "Your prompt here"}}]
 response = llm.chat(messages, images=[img_bytes])
                 '''
                 st.code(python_code, language='python')
