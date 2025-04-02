@@ -4,7 +4,6 @@ import plotly.express as px
 import re
 import json
 import numpy as np
-import base64
 from io import BytesIO
 from llama_index.core import PromptTemplate
 from llama_index.core.agent import ReActAgent
@@ -40,7 +39,7 @@ def main():
     st.sidebar.header("1️⃣ Upload & Configure")
     uploaded_file = st.sidebar.file_uploader("Upload your dataset (CSV file)", type=["csv"])
     
-    llm_choice = st.sidebar.selectbox("Select AI Model", ["Groq (Llama3-70B)", "OpenAI (gpt-4o-mini)"])
+    llm_choice = st.sidebar.selectbox("Select AI Model", ["Groq (Llama3-70B)", "OpenAI (GPT-4o)"])
     api_key = st.sidebar.text_input("Enter API Key", type="password")
     
     if uploaded_file is not None and api_key:
@@ -65,52 +64,47 @@ def main():
                 st.error(f"Error generating chart: {e}")
                 return
             
-            # Convert the figure to a PNG image and encode it as a Base64 string
+            # Convert the figure to a PNG image (as bytes)
             try:
-                # Obtain image bytes from the figure
                 img_bytes = fig.to_image(format="png")
-                # Encode the image bytes to Base64
-                img_b64 = base64.b64encode(img_bytes).decode("utf-8")
             except Exception as e:
                 st.error(f"Error converting chart to image: {e}")
                 return
 
             # Initialize LLM based on selection
-            llm = Groq(model="llama3-70b-8192", api_key=api_key) if "Groq" in llm_choice else OpenAI(model="gpt-4o-mini", api_key=api_key)
+            llm = Groq(model="llama3-70b-8192", api_key=api_key) if "Groq" in llm_choice else OpenAI(model="gpt-4o", api_key=api_key)
             
-            # Append the Base64 encoded image to the AI prompt
+            # Prepare the text prompt without embedding the image textually
             ai_prompt = f"""
-                You are an AI specialized in marketing analytics. Given the dataset and the generated visualization:
-                - Identify key trends in '{x_axis}' and '{y_axis}'.
-                - Provide actionable marketing insights based on the chart.
-                - Analyze anomalies, patterns, seasonal variations, and customer behavior.
-                - Ensure insights are specific to the provided dataset and visualization.
-                {user_prompt}
-                The visualization image (Base64 encoded PNG): {img_b64}
+You are an AI specialized in marketing analytics. Given the dataset and the generated visualization:
+- Identify key trends in '{x_axis}' and '{y_axis}'.
+- Provide actionable marketing insights based on the chart.
+- Analyze anomalies, patterns, seasonal variations, and customer behavior.
+- Ensure insights are specific to the provided dataset and visualization.
+{user_prompt}
             """
             
+            # Send both the text prompt and the image bytes to the agent.
+            # (Assumes the agent.chat() method accepts an 'images' parameter.)
             agent = ReActAgent.from_tools([], llm=llm, verbose=True)
-            response = agent.chat(ai_prompt)
+            response = agent.chat(ai_prompt, images=[img_bytes])
             
-            # Extract insights
+            # Extract and display the insights from the AI response
             insights_text = response.response if response.response else "No insights provided by AI."
-            
             st.subheader("💡 AI-Generated Insights")
             st.write(insights_text)
             
             # Show Python Code Button
             if st.button("📜 Show Python Code"):
                 python_code = f'''
-                import plotly.express as px
-                import base64
-                # Generate the chart
-                fig = px.{chart_type}(df, x="{x_axis}", y="{y_axis}", title="{chart_type.capitalize()} Visualization")
-                fig.update_layout(xaxis_title="{x_axis}", yaxis_title="{y_axis}")
-                fig.show()
-                # Convert the chart to a Base64 encoded image
-                img_bytes = fig.to_image(format="png")
-                img_b64 = base64.b64encode(img_bytes).decode("utf-8")
-                print("Base64 Encoded Chart Image:", img_b64)
+import plotly.express as px
+# Generate the chart
+fig = px.{chart_type}(df, x="{x_axis}", y="{y_axis}", title="{chart_type.capitalize()} Visualization")
+fig.update_layout(xaxis_title="{x_axis}", yaxis_title="{y_axis}")
+fig.show()
+# Convert the chart to a PNG image (as bytes)
+img_bytes = fig.to_image(format="png")
+# (If needed, send 'img_bytes' to your AI model as part of a multimodal input.)
                 '''
                 st.code(python_code, language='python')
     else:
