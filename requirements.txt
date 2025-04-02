@@ -1,0 +1,11 @@
+streamlit
+llama-index-core
+llama-index-llms-groq
+plotly
+pandas
+numpy
+datetime
+regex
+pyperclip
+tabulate
+requests
