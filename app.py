@@ -4,6 +4,8 @@ import plotly.express as px
 import re
 import json
 import numpy as np
+import base64
+from io import BytesIO
 from llama_index.core import PromptTemplate
 from llama_index.core.agent import ReActAgent
 from llama_index.llms.groq import Groq
@@ -55,6 +57,7 @@ def main():
         if generate_button:
             st.subheader("📈 Visualization")
             try:
+                # Create the Plotly figure based on the selected chart type
                 fig = px.__getattribute__(chart_type)(df, x=x_axis, y=y_axis, title=f'{chart_type.capitalize()} Visualization')
                 fig.update_layout(xaxis_title=x_axis, yaxis_title=y_axis)
                 st.plotly_chart(fig)
@@ -62,7 +65,17 @@ def main():
                 st.error(f"Error generating chart: {e}")
                 return
             
-            # Initialize LLM
+            # Convert the figure to a PNG image and encode it as a Base64 string
+            try:
+                # Obtain image bytes from the figure
+                img_bytes = fig.to_image(format="png")
+                # Encode the image bytes to Base64
+                img_b64 = base64.b64encode(img_bytes).decode("utf-8")
+            except Exception as e:
+                st.error(f"Error converting chart to image: {e}")
+                return
+
+            # Initialize LLM based on selection
             llm = Groq(model="llama3-70b-8192", api_key=api_key) if "Groq" in llm_choice else OpenAI(model="gpt-4o", api_key=api_key)
             
             # Append the Base64 encoded image to the AI prompt
@@ -87,12 +100,18 @@ def main():
             
             # Show Python Code Button
             if st.button("📜 Show Python Code"):
-                python_code = f"""
+                python_code = f'''
                 import plotly.express as px
-                fig = px.{chart_type}(df, x='{x_axis}', y='{y_axis}', title='{chart_type.capitalize()} Visualization')
-                fig.update_layout(xaxis_title='{x_axis}', yaxis_title='{y_axis}')
+                import base64
+                # Generate the chart
+                fig = px.{chart_type}(df, x="{x_axis}", y="{y_axis}", title="{chart_type.capitalize()} Visualization")
+                fig.update_layout(xaxis_title="{x_axis}", yaxis_title="{y_axis}")
                 fig.show()
-                """
+                # Convert the chart to a Base64 encoded image
+                img_bytes = fig.to_image(format="png")
+                img_b64 = base64.b64encode(img_bytes).decode("utf-8")
+                print("Base64 Encoded Chart Image:", img_b64)
+                '''
                 st.code(python_code, language='python')
     else:
         st.info("Upload a dataset and enter an API key to proceed.")
