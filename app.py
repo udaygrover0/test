@@ -37,7 +37,7 @@ def main():
     st.sidebar.header("1️⃣ Upload & Configure")
     uploaded_file = st.sidebar.file_uploader("Upload your dataset (CSV file)", type=["csv"])
     
-    llm_choice = st.sidebar.selectbox("Select AI Model", ["Groq (Llama3-70B)", "OpenAI (GPT-4o-mini)"])
+    llm_choice = st.sidebar.selectbox("Select AI Model", ["Groq (Llama3-70B)", "OpenAI (GPT-4o)"])
     api_key = st.sidebar.text_input("Enter API Key", type="password")
     
     if uploaded_file is not None and api_key:
@@ -75,7 +75,7 @@ def main():
             llm = Groq(model="llama3-70b-8192", api_key=api_key) if "Groq" in llm_choice \
                   else OpenAI(model="gpt-4o-mini", api_key=api_key)
             
-            # Prepare the text prompt without embedding the image textually
+            # Prepare the text prompt (now wrapped in a list to satisfy the expected input type)
             ai_prompt = f"""
 You are an AI specialized in marketing analytics. Given the dataset and the generated visualization:
 - Identify key trends in '{x_axis}' and '{y_axis}'.
@@ -85,18 +85,17 @@ You are an AI specialized in marketing analytics. Given the dataset and the gene
 {user_prompt}
             """
             
-            # Call the LLM's chat method directly with the image bytes.
-            # This assumes that your LLM supports a 'chat' method with an images parameter.
+            # Wrap the prompt in a list
+            messages = [ai_prompt]
+            
+            # Call the LLM's chat method with the text messages and image bytes.
             try:
-                response = llm.chat(ai_prompt, images=[img_bytes])
-            except TypeError as te:
-                st.error(f"LLM chat method does not support image input: {te}")
-                return
+                response = llm.chat(messages, images=[img_bytes])
             except Exception as e:
                 st.error(f"Error during AI processing: {e}")
                 return
             
-            # Extract insights from the response
+            # Extract and display the insights from the AI response
             insights_text = response.response if hasattr(response, 'response') and response.response \
                             else "No insights provided by AI."
             
@@ -113,8 +112,9 @@ fig.update_layout(xaxis_title="{x_axis}", yaxis_title="{y_axis}")
 fig.show()
 # Convert the chart to a PNG image (as bytes)
 img_bytes = fig.to_image(format="png")
-# Send the prompt and image bytes to the LLM (if supported)
-response = llm.chat("Your prompt here", images=[img_bytes])
+# Prepare prompt and call LLM
+messages = ["Your prompt here"]
+response = llm.chat(messages, images=[img_bytes])
                 '''
                 st.code(python_code, language='python')
     else:
