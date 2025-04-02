@@ -39,7 +39,7 @@ def main():
     uploaded_file = st.sidebar.file_uploader("Upload your dataset (CSV file)", type=["csv"])
     
     llm_choice = st.sidebar.selectbox("Select AI Model", ["Groq (Llama3-70B)", "OpenAI (GPT-4o)"])
-    api_key = st.sidebar.text_input("Enter API Key", type="password")
+    api_keyy = st.sidebar.text_input("Enter API Key", type="password")
     
     if uploaded_file is not None and api_key:
         df = pd.read_csv(uploaded_file)
@@ -63,7 +63,7 @@ def main():
                 return
             
             # Initialize LLM
-            llm = Groq(model="llama3-70b-8192", api_key=api_key) if "Groq" in llm_choice else OpenAI(model="gpt-4o", api_key=api_key)
+            llm = Groq(model="llama3-70b-8192", api_key=api_keyy) if "Groq" in llm_choice else OpenAI(model="gpt-4o", api_key=api_keyy)
             
             # Prompt AI for insights
             ai_prompt = f"""
