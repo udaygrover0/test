@@ -5,8 +5,6 @@ import re
 import json
 import numpy as np
 from io import BytesIO
-from llama_index.core import PromptTemplate
-from llama_index.core.agent import ReActAgent
 from llama_index.llms.groq import Groq
 from llama_index.llms.openai import OpenAI
 
@@ -50,14 +48,16 @@ def main():
         x_axis = st.sidebar.selectbox("Select X-axis", df.columns)
         y_axis = st.sidebar.selectbox("Select Y-axis", df.columns)
         chart_type = st.sidebar.selectbox("Select Chart Type", ["bar", "line", "scatter", "histogram", "pie", "box"])
-        user_prompt = st.sidebar.text_area("💬 Custom AI Prompt (Optional)", "Analyze the provided data and chart to generate insights.")
+        user_prompt = st.sidebar.text_area("💬 Custom AI Prompt (Optional)", 
+                                           "Analyze the provided data and chart to generate insights.")
         generate_button = st.sidebar.button("🚀 Generate Visualization & Insights")
         
         if generate_button:
             st.subheader("📈 Visualization")
             try:
                 # Create the Plotly figure based on the selected chart type
-                fig = px.__getattribute__(chart_type)(df, x=x_axis, y=y_axis, title=f'{chart_type.capitalize()} Visualization')
+                fig = px.__getattribute__(chart_type)(df, x=x_axis, y=y_axis, 
+                                                      title=f'{chart_type.capitalize()} Visualization')
                 fig.update_layout(xaxis_title=x_axis, yaxis_title=y_axis)
                 st.plotly_chart(fig)
             except Exception as e:
@@ -72,7 +72,8 @@ def main():
                 return
 
             # Initialize LLM based on selection
-            llm = Groq(model="llama3-70b-8192", api_key=api_key) if "Groq" in llm_choice else OpenAI(model="gpt-4o-mini", api_key=api_key)
+            llm = Groq(model="llama3-70b-8192", api_key=api_key) if "Groq" in llm_choice \
+                  else OpenAI(model="gpt-4o-mini", api_key=api_key)
             
             # Prepare the text prompt without embedding the image textually
             ai_prompt = f"""
@@ -84,13 +85,21 @@ You are an AI specialized in marketing analytics. Given the dataset and the gene
 {user_prompt}
             """
             
-            # Send both the text prompt and the image bytes to the agent.
-            # (Assumes the agent.chat() method accepts an 'images' parameter.)
-            agent = ReActAgent.from_tools([], llm=llm, verbose=True)
-            response = agent.chat(ai_prompt, images=[img_bytes])
+            # Call the LLM's chat method directly with the image bytes.
+            # This assumes that your LLM supports a 'chat' method with an images parameter.
+            try:
+                response = llm.chat(ai_prompt, images=[img_bytes])
+            except TypeError as te:
+                st.error(f"LLM chat method does not support image input: {te}")
+                return
+            except Exception as e:
+                st.error(f"Error during AI processing: {e}")
+                return
             
-            # Extract and display the insights from the AI response
-            insights_text = response.response if response.response else "No insights provided by AI."
+            # Extract insights from the response
+            insights_text = response.response if hasattr(response, 'response') and response.response \
+                            else "No insights provided by AI."
+            
             st.subheader("💡 AI-Generated Insights")
             st.write(insights_text)
             
@@ -104,7 +113,8 @@ fig.update_layout(xaxis_title="{x_axis}", yaxis_title="{y_axis}")
 fig.show()
 # Convert the chart to a PNG image (as bytes)
 img_bytes = fig.to_image(format="png")
-# (If needed, send 'img_bytes' to your AI model as part of a multimodal input.)
+# Send the prompt and image bytes to the LLM (if supported)
+response = llm.chat("Your prompt here", images=[img_bytes])
                 '''
                 st.code(python_code, language='python')
     else:
