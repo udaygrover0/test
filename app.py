@@ -65,7 +65,7 @@ def main():
             # Initialize LLM
             llm = Groq(model="llama3-70b-8192", api_key=api_key) if "Groq" in llm_choice else OpenAI(model="gpt-4o", api_key=api_key)
             
-            # Prompt AI for insights
+            # Append the Base64 encoded image to the AI prompt
             ai_prompt = f"""
                 You are an AI specialized in marketing analytics. Given the dataset and the generated visualization:
                 - Identify key trends in '{x_axis}' and '{y_axis}'.
@@ -73,6 +73,7 @@ def main():
                 - Analyze anomalies, patterns, seasonal variations, and customer behavior.
                 - Ensure insights are specific to the provided dataset and visualization.
                 {user_prompt}
+                The visualization image (Base64 encoded PNG): {img_b64}
             """
             
             agent = ReActAgent.from_tools([], llm=llm, verbose=True)
