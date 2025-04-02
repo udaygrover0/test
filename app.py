@@ -63,7 +63,7 @@ def main():
                 return
             
             # Initialize LLM
-            llm = Groq(model="llama3-70b-8192", api_key="api_key") if "Groq" in llm_choice else OpenAI(model="gpt-4o", api_key="api_key")
+            llm = Groq(model="llama3-70b-8192", api_key=api_key) if "Groq" in llm_choice else OpenAI(model="gpt-4o", api_key=api_key)
             
             # Prompt AI for insights
             ai_prompt = f"""
